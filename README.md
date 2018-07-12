@@ -8,24 +8,45 @@
 
 Параметры запуска:
 
-  -f FILEPROPERTY, --fileproperty FILEPROPERTY  
-  Если заполнен данный параметр, то все остальные данные берутся из данного файла.
+-f FILEPROPERTY, --fileproperty FILEPROPERTY  
+Если заполнен данный параметр, то все остальные данные берутся из данного файла.
+
+-s SMTPSERVER, --smtpserver SMTPSERVER
+SMTP сервер, по умолчанию smtp.yandex.ru:465
+
+-u USERNAME, --username USERNAME
+Логин пользователя почты
+
+-p PASSWORD, --password PASSWORD
+Пароль пользователя почты
+
+-t MAILTO, --mailto MAILTO
+Куда отсылать информацию
+
+-su SUBJECT, --subject SUBJECT
+Тема письма
+
+-pb PATHBACKUP, --pathbackup PATHBACKUP
+Путь к каталогу где лежат архивы
+
+-------------------------------  
+
+Примеры запуска
+
+Из командной строки:
+D:\1C\Свои\backupControl>backupcontrol.exe -u test@yandex.ru -p pas$1 -t apxi2@yandex.ru -su Проверка архивов -pb E:\arhiv\
+
+С помощью отдельного файла настроек:
+D:\1C\Свои\backupControl>backupcontrol.exe -f test.ini
+
+Файл test.ini
+[settings]
+smtpserver = smtp.yandex.ru:465
+username = test@yandex.ru
+password = pas
+mailto = apxi2@yandex.ru
+subject = Проверка архивов
+pathbackup = E:\arhiv\
+
   
-  -s SMTPSERVER, --smtpserver SMTPSERVER
-  SMTP сервер, по умолчанию smtp.yandex.ru:465
-  
-  -u USERNAME, --username USERNAME
-  Логин пользователя почты
-  
-  -p PASSWORD, --password PASSWORD
-  Пароль пользователя почты
-  
-  -t MAILTO, --mailto MAILTO
-  Куда отсылать информацию
-  
-  -su SUBJECT, --subject SUBJECT
-  Тема письма
-  
-  -pb PATHBACKUP, --pathbackup PATHBACKUP
-  Путь к каталогу где лежат архивы
   
