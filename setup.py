@@ -10,3 +10,4 @@ setup(
     description = 'Control create backupfiles',
     executables = executables
 )
+input('Все')

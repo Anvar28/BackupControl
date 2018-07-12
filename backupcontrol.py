@@ -24,6 +24,7 @@ import datetime
 import argparse
 import sys
 import configparser
+import traceback
 from email.mime.text import MIMEText
 from email.header import Header
 
@@ -39,7 +40,7 @@ class cDataProg:
         self.strNotFoundPathBackup = 'Не найден каталог с архивными копиями: {0}'.format(self.pathBackup)
         self.strMailSend = 'Отправлено письмо на адрес {0} с текстом \n {1}'
         self.strMailError = 'Ошибка оправки почты host={0}  from_addr={1}  to_addr={2}'
-        self.strBackupFileOld = 'Последний раз архивный файл \n {0} был создан {1}\n Необходимо проверить как создаются архивы.'
+        self.strBackupFileOld = 'Последний раз архивный файл \n {0} был создан <b> {1} </b> \n Необходимо проверить как создаются архивы.'
         self.strBackupFileSmall = 'Размер файла \n({0}) байт {1} \n меньше чем предыдущего файла \n ({2}) байт {3} \n Необходимо проверить как создаются архивы.'
         self.strCheck = 'Проверка связи!'
 
@@ -63,8 +64,10 @@ def SendEmailLong(host, from_addr, pas, to_addr, subject, body_text):
         server.quit()
         log(dataProg.strMailSend.format(to_addr, body_text))
     except Exception as e:
+        log('----- Ошибка -----')
         log(dataProg.strMailError.format(host, from_addr, to_addr))
         log(str(e))
+        log(traceback.format_exc)
 
 
 def SendEmail(body_text):
@@ -189,12 +192,12 @@ if __name__ == '__main__':
         #Грузим настройки из файла
         loadPropertyFromFile(namespace.fileproperty)
     else:
-        mailSmtpServer = namespace.smtpserver
-        mailFrom = namespace.username
-        mailPass = namespace.password
-        mailTo = namespace.mailto
-        mailSubject = namespace.subject
-        pathBackup = namespace.pathbackup
+        dataProg.mailSmtpServer = namespace.smtpserver
+        dataProg.mailFrom = namespace.username
+        dataProg.mailPass = namespace.password
+        dataProg.mailTo = namespace.mailto
+        dataProg.mailSubject = namespace.subject
+        dataProg.pathBackup = namespace.pathbackup
 
     if datetime.datetime.today().isoweekday() == 1:
         SendEmail(self.strCheck)
@@ -202,5 +205,6 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        abs = sys.exc_info()
+        log('----- Ошибка -----')
         log(str(e))
+        log(traceback.format_exc())
