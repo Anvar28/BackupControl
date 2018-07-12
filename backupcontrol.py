@@ -27,6 +27,7 @@ import configparser
 import traceback
 from email.mime.text import MIMEText
 from email.header import Header
+import inspect
 
 class cDataProg:
     def __init__(self):
@@ -46,10 +47,19 @@ class cDataProg:
 
 dataProg = cDataProg()
 
+def pathScript(follow_symlinks=True):
+    if getattr(sys, 'frozen', False): # py2exe, PyInstaller, cx_Freeze
+        path = os.path.abspath(sys.executable)
+    else:
+        path = inspect.getabsfile(pathScript)
+    if follow_symlinks:
+        path = os.path.realpath(path)
+    return os.path.dirname(path)
+
 def log(str):
     str = ''+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())+' '+str
     print(str)
-    f = open(os.getcwd()+'\\'+dataProg.fileLog, 'a')
+    f = open(pathScript()+'\\'+dataProg.fileLog, 'a')
     f.writelines('\r\n'+str)
 
 def SendEmailLong(host, from_addr, pas, to_addr, subject, body_text):
@@ -95,7 +105,7 @@ def main():
         for f in currentDirectory.iterdir():
             fileName = str(f)
             if os.path.isfile(fileName) :
-                timeFile = time.gmtime(os.path.getctime(fileName))
+                timeFile = time.localtime(os.path.getctime(fileName))
                 strTimeFile = time.strftime('%Y-%m-%d-%H-%M-%S', timeFile)
                 allFiles[strTimeFile] = {'path':fileName, 'date':timeFile}
 
@@ -155,7 +165,7 @@ def createArgParser():
 
 def loadPropertyFromFile(fileName):
 
-    fullFileName = os.getcwd()+'\\'+fileName
+    fullFileName = pathScript()+'\\'+fileName
 
     config = configparser.ConfigParser()
     section = 'settings'
@@ -185,24 +195,24 @@ def loadPropertyFromFile(fileName):
 
 if __name__ == '__main__':
 
-    argPars = createArgParser()
-    namespace = argPars.parse_args()
-
-    if namespace.fileproperty:
-        #Грузим настройки из файла
-        loadPropertyFromFile(namespace.fileproperty)
-    else:
-        dataProg.mailSmtpServer = namespace.smtpserver
-        dataProg.mailFrom = namespace.username
-        dataProg.mailPass = namespace.password
-        dataProg.mailTo = namespace.mailto
-        dataProg.mailSubject = namespace.subject
-        dataProg.pathBackup = namespace.pathbackup
-
-    if datetime.datetime.today().isoweekday() == 1:
-        SendEmail(self.strCheck)
-
     try:
+        argPars = createArgParser()
+        namespace = argPars.parse_args()
+
+        if namespace.fileproperty:
+            #Грузим настройки из файла
+            loadPropertyFromFile(namespace.fileproperty)
+        else:
+            dataProg.mailSmtpServer = namespace.smtpserver
+            dataProg.mailFrom = namespace.username
+            dataProg.mailPass = namespace.password
+            dataProg.mailTo = namespace.mailto
+            dataProg.mailSubject = namespace.subject
+            dataProg.pathBackup = namespace.pathbackup
+
+        if datetime.datetime.today().isoweekday() == 1:
+            SendEmail(self.strCheck)
+
         main()
     except Exception as e:
         log('----- Ошибка -----')
