@@ -1,6 +1,13 @@
 #-------------------------------------------------------------------------------
 # Name:        BackupControl
-# Purpose:
+# Purpose:     Программа для проверки создания архивов.
+#              По переданным параметрам проверяет в каталоге архивов
+#              1. Когда был создан последний архив, если дата меньше текущего дня
+#              то оправляет письмо
+#              2. Проверяет размер архива по сравнению с прошлым архивом,  если
+#              размер меньше, то опправляет письмо
+#              3. Проверяет существует ли каталог архива, если нет, то оправляет письмо
+#              4. Раз в неделю отправляет письмо для проверки связи
 #
 # Author:      anvar
 #
@@ -13,6 +20,7 @@ import smtplib
 import os
 import pathlib
 import time
+import datetime
 import argparse
 import sys
 import configparser
@@ -33,6 +41,7 @@ class cDataProg:
         self.strMailError = 'Ошибка оправки почты host={0}  from_addr={1}  to_addr={2}'
         self.strBackupFileOld = 'Последний раз архивный файл \n {0} был создан {1}\n Необходимо проверить как создаются архивы.'
         self.strBackupFileSmall = 'Размер файла \n({0}) байт {1} \n меньше чем предыдущего файла \n ({2}) байт {3} \n Необходимо проверить как создаются архивы.'
+        self.strCheck = 'Проверка связи!'
 
 dataProg = cDataProg()
 
@@ -48,7 +57,7 @@ def SendEmailLong(host, from_addr, pas, to_addr, subject, body_text):
     msg['From'] = from_addr
     msg['To'] = to_addr
     try:
-        server = smtplib.SMTP_SSL(host, timeout=10)
+        server = smtplib.SMTP_SSL(host, timeout=20)
         server.login(from_addr, pas)
         server.sendmail(from_addr, [to_addr], msg.as_string())
         server.quit()
@@ -125,6 +134,8 @@ def main():
                             fileName
                         )
                     )
+                break
+
 
             dataOldFile = dataFile
 
@@ -184,6 +195,9 @@ if __name__ == '__main__':
         mailTo = namespace.mailto
         mailSubject = namespace.subject
         pathBackup = namespace.pathbackup
+
+    if datetime.datetime.today().isoweekday() == 1:
+        SendEmail(self.strCheck)
 
     try:
         main()
