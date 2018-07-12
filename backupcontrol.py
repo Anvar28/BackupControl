@@ -19,21 +19,27 @@ import configparser
 from email.mime.text import MIMEText
 from email.header import Header
 
-progData =
-mailSmtpServer  = 'smtp.yandex.ru:465'
-mailFrom        = ''
-mailPass        = ''
-mailTo          = ''
-mailSubject     = ''
-pathBackup      = ''
-fileLog         = 'log.txt'
+class cDataProg:
+    def __init__(self):
+        self.mailSmtpServer  = 'smtp.yandex.ru:465'
+        self.mailFrom        = ''
+        self.mailPass        = ''
+        self.mailTo          = ''
+        self.mailSubject     = ''
+        self.pathBackup      = ''
+        self.fileLog         = 'log.txt'
+        self.strNotFoundPathBackup = 'Не найден каталог с архивными копиями: {0}'.format(self.pathBackup)
+        self.strMailSend = 'Отправлено письмо на адрес {0} с текстом \n {1}'
+        self.strMailError = 'Ошибка оправки почты host={0}  from_addr={1}  to_addr={2}'
+        self.strBackupFileOld = 'Последний раз архивный файл \n {0} был создан {1}\n Необходимо проверить как создаются архивы.'
+        self.strBackupFileSmall = 'Размер файла \n({0}) байт {1} \n меньше чем предыдущего файла \n ({2}) байт {3} \n Необходимо проверить как создаются архивы.'
 
-strNotFoundPathBackup = 'Не найден каталог с архивными копиями: '+pathBackup
+dataProg = cDataProg()
 
 def log(str):
     str = ''+time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())+' '+str
     print(str)
-    f = open(os.getcwd()+'\\'+fileLog, 'a')
+    f = open(os.getcwd()+'\\'+dataProg.fileLog, 'a')
     f.writelines('\r\n'+str)
 
 def SendEmailLong(host, from_addr, pas, to_addr, subject, body_text):
@@ -42,30 +48,38 @@ def SendEmailLong(host, from_addr, pas, to_addr, subject, body_text):
     msg['From'] = from_addr
     msg['To'] = to_addr
     try:
-        server = smtplib.SMTP_SSL(host, 465, 10)
+        server = smtplib.SMTP_SSL(host, timeout=10)
         server.login(from_addr, pas)
         server.sendmail(from_addr, [to_addr], msg.as_string())
-    except:
-        log('Ошибка оправки почты host='+host+' from_addr='+from_addr+' to_addr='+to_addr)
-        log(abs[1].__doc__)
-    finally:
         server.quit()
+        log(dataProg.strMailSend.format(to_addr, body_text))
+    except Exception as e:
+        log(dataProg.strMailError.format(host, from_addr, to_addr))
+        log(str(e))
+
 
 def SendEmail(body_text):
-    log(body_text)
-    SendEmailLong(mailSmtpServer, mailFrom, mailPass, mailTo, mailSubject, body_text)
+    #log(body_text)
+    SendEmailLong(
+        dataProg.mailSmtpServer,
+        dataProg.mailFrom,
+        dataProg.mailPass,
+        dataProg.mailTo,
+        dataProg.mailSubject,
+        body_text
+    )
 
 def main():
     log('-------------------------')
-    if not os.path.exists(pathBackup):
-        SendEmail(strNotFoundPathBackup)
+    if not os.path.exists(dataProg.pathBackup):
+        SendEmail(dataProg.strNotFoundPathBackup)
     else:
         # Перебираем файлы, сортируем по уменьшению даты
         # если размер предыдущего архива меньше, то отправляем письмо
         # если дата создания меньше текущей даты, то отправляем письмо
 
         allFiles = {}
-        currentDirectory = pathlib.Path(pathBackup)
+        currentDirectory = pathlib.Path(dataProg.pathBackup)
         for f in currentDirectory.iterdir():
             fileName = str(f)
             if os.path.isfile(fileName) :
@@ -90,11 +104,11 @@ def main():
                 if (currentTime.tm_year != dateFile.tm_year or
                         currentTime.tm_mon != dateFile.tm_mon or
                         currentTime.tm_mday != dateFile.tm_mday):
-                    SendEmail('Последний раз архивный файл \n'+
-                        fileName+
-                        ' был создан '+
-                        time.strftime('%Y-%m-%d %H:%M:%S', dateFile)+
-                        ' Необходимо проверить как создаются архивы.'
+                    SendEmail(
+                        dataProg.strBackupFileOld.format(
+                            fileName,
+                            time.strftime('%Y-%m-%d %H:%M:%S', dateFile)
+                        )
                     )
 
             # если размер предыдущего архива меньше, то отправляем письмо
@@ -103,11 +117,13 @@ def main():
                 fileNameOldFile = dataOldFile.get('path')
                 sizeOldFile = os.path.getsize(fileNameOldFile)
                 if sizeOldFile < sizeCurrentFile :
-                    SendEmail('Размер файла \n'+
-                        '('+str(sizeOldFile)+') байт '+fileNameOldFile +
-                        '\n меньше чем предыдущего файла \n'+
-                        '('+str(sizeCurrentFile)+') байт '+fileName +
-                        '\nНеобходимо проверить как создаются архивы.'
+                    SendEmail(
+                        dataProg.strBackupFileSmall.format(
+                            str(sizeOldFile),
+                            fileNameOldFile,
+                            str(sizeCurrentFile),
+                            fileName
+                        )
                     )
 
             dataOldFile = dataFile
@@ -115,7 +131,7 @@ def main():
 def createArgParser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--fileproperty')
-    parser.add_argument('-s', '--smtpserver', default=mailSmtpServer)
+    parser.add_argument('-s', '--smtpserver', default=dataProg.mailSmtpServer)
     parser.add_argument('-u', '--username')
     parser.add_argument('-p', '--password')
     parser.add_argument('-t', '--mailto')
@@ -130,9 +146,12 @@ def loadPropertyFromFile(fileName):
     config = configparser.ConfigParser()
     section = 'settings'
 
+    global dataProg
+
     # если файл не существует, то создаем
     if not os.path.exists(fullFileName):
-        config.set(section, 'smtpserver', mailSmtpServer)
+        config.add_section(section)
+        config.set(section, 'smtpserver', dataProg.mailSmtpServer)
         config.set(section, 'username', '')
         config.set(section, 'password', '')
         config.set(section, 'mailto', '')
@@ -143,12 +162,12 @@ def loadPropertyFromFile(fileName):
 
     else:
         config.read(fullFileName)
-        mailSmtpServer = config.get(section, 'smtpserver')
-        mailFrom = config.get(section, 'username')
-        mailPass = config.get(section, 'password')
-        mailTo = config.get(section, 'mailto')
-        mailSubject = config.get(section, 'subject')
-        pathBackup = config.get(section, 'pathbackup')
+        dataProg.mailSmtpServer = config.get(section, 'smtpserver')
+        dataProg.mailFrom = config.get(section, 'username')
+        dataProg.mailPass = config.get(section, 'password')
+        dataProg.mailTo = config.get(section, 'mailto')
+        dataProg.mailSubject = config.get(section, 'subject')
+        dataProg.pathBackup = config.get(section, 'pathbackup')
 
 if __name__ == '__main__':
 
@@ -165,8 +184,9 @@ if __name__ == '__main__':
         mailTo = namespace.mailto
         mailSubject = namespace.subject
         pathBackup = namespace.pathbackup
+
     try:
         main()
-    except:
+    except Exception as e:
         abs = sys.exc_info()
-        log(abs[1].__doc__)
+        log(str(e))
